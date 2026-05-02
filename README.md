@@ -13,7 +13,7 @@ The CLIs handle their own authentication outside the JVM, so this app holds no A
 
 ## Prerequisites
 
-- **JDK 22**. Set `JAVA_HOME` to your install before building (the system default JDK may be older).
+- **JDK 22**. If your default `java` isn't 22, set `JAVA_HOME` either in your shell or in `.env` (the bundled `run.sh` reads it from `.env` and prefixes `$JAVA_HOME/bin` to `PATH` for both the Maven build and the JVM launch).
 - **`claude` CLI** on `PATH`, authenticated. Verify: `claude --version` then `claude -p "ping"`.
 - **`gemini` CLI** on `PATH`, authenticated. Verify: `gemini --version` then `gemini -p "ping" -o text`.
 - A Telegram bot registered with [@BotFather](https://t.me/BotFather), giving you `BOT_NAME` (the @username; `@` prefix optional) and `BOT_TOKEN`.
@@ -21,7 +21,7 @@ The CLIs handle their own authentication outside the JVM, so this app holds no A
 ## Quick start
 
 1. `cd` into the project root.
-2. Copy `env.example` to `.env` at the project root and fill in `BOT_NAME` and `BOT_TOKEN`. Uncomment any other variables you want to override (allowed users/groups, models, effort level, etc.). LF line endings only — CRLF will leak `\r` into env vars and break Telegram auth.
+2. Copy `env.example` to `.env` at the project root and fill in `BOT_NAME` and `BOT_TOKEN`. Uncomment any other variables you want to override (`JAVA_HOME`, allowed users/groups, models, effort level, etc.). LF line endings only — CRLF will leak `\r` into env vars and break Telegram auth.
    ```bash
    cp env.example .env && $EDITOR .env
    ```

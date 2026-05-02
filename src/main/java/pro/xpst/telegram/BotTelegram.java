@@ -19,6 +19,7 @@ import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScope
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 import pro.xpst.ai.AiService;
 import pro.xpst.ai.AiServiceFactory;
 import pro.xpst.telegram.commands.ModelCommand;
@@ -175,14 +176,31 @@ public class BotTelegram extends CommandLongPollingTelegramBot implements Serial
             }
         } else {
             SendMessage snd = new SendMessage(aChatId.toString(), aMessage);
-            snd.enableMarkdown(true);
             snd.setParseMode(ParseMode.MARKDOWN);
             try {
                 this.telegramClient.execute(snd);
+            } catch (TelegramApiRequestException ex) {
+                if (isMarkdownParseError(ex)) {
+                    LOGGER.warn("Markdown parse failed (chatId={}); resending as plain text. Reason: {}",
+                            aChatId, ex.getApiResponse());
+                    SendMessage plain = new SendMessage(aChatId.toString(), aMessage);
+                    try {
+                        this.telegramClient.execute(plain);
+                    } catch (Exception ex2) {
+                        LOGGER.error("Plain-text fallback also failed for chatId={}: {}", aChatId, aMessage, ex2);
+                    }
+                } else {
+                    LOGGER.error("Error while sending a message: {}", aMessage, ex);
+                }
             } catch (Exception ex) {
                 LOGGER.error("Error while sending a message: {}", aMessage, ex);
             }
         }
+    }
+
+    private static boolean isMarkdownParseError(TelegramApiRequestException ex) {
+        String resp = ex.getApiResponse();
+        return resp != null && resp.contains("can't parse entities");
     }
 
     public void deleteMessage(Long aChatId, Integer aMessageId) {

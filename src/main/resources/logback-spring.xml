@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="true" scan="false" scanPeriod="30 seconds" packagingData="true">
+
+    <property name="loggingDir" value="logs"/>
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%n####[%d{yyyy-MM-dd HH:mm:ss.SSS}] %-5level [%logger] \(%thread\) %mdc %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="pro.xpst" level="debug" additivity="false">
+        <appender-ref ref="console"/>
+    </logger>
+
+    <root level="info">
+        <appender-ref ref="console"/>
+    </root>
+
+</configuration>

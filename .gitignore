@@ -1,0 +1,9 @@
+/target/
+/.idea/
+/.vscode/
+/.env
+/bot.log
+/CLAUDE.md
+/.claude/
+/maven-settings.xml
+/fork.md

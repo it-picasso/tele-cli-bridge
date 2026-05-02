@@ -75,6 +75,8 @@ Every value in `src/main/resources/application.properties` is wrapped as `${ENV_
 | `CLAUDE_WORKDIR` | `pro.xpst.cli.claude.workdir` | `./claude-cli` | Source directory for `CLAUDE.md` (security instructions). At startup the file is copied into a fresh tmp sandbox dir which becomes the subprocess `cwd`. |
 | `GEMINI_WORKDIR` | `pro.xpst.cli.gemini.workdir` | `./gemini-cli` | Same arrangement for `GEMINI.md`. |
 | `CLI_TIMEOUT_SECONDS` | `pro.xpst.cli.timeout-seconds` | `120` | Per-call subprocess timeout. Times out → `destroyForcibly()`. |
+| `CLAUDE_TOOLS` | `pro.xpst.cli.claude.tools` | empty | Comma-separated allowlist of Claude built-in tools (e.g. `WebSearch`, `WebSearch,WebFetch`). Empty = strict lockdown (`--tools ""`). See **Security model** before enabling. |
+| `GEMINI_TOOLS` | `pro.xpst.cli.gemini.tools` | empty | Comma-separated allowlist of Gemini built-in tools (e.g. `google_web_search`). Empty = strict lockdown (no `--allowed-tools` flag passed). See **Security model** before enabling. |
 | `CONVERSATION_EXPIRATION` | `pro.xpst.conversation.expiration` | `60` | Minutes of inactivity after which a chat's history auto-resets. |
 | `SERVER_PORT` | `server.port` | `8191` | Spring Boot HTTP port (Tomcat is brought up by `spring-boot-starter-web`; the bot itself is long-polling). |
 | `LOG_LEVEL` | `logging.level.pro.xpst` | `DEBUG` | Log level for the `pro.xpst` package. |
@@ -103,6 +105,10 @@ The bot's threat model assumes Telegram users may send hostile content (prompt i
 5. **Per-CLI memory (Gemini).** `gemini-cli/GEMINI.md` is auto-loaded by the CLI from the sandbox `cwd` and instructs the model the same way (no tool use, no project context, no persona leak, language matching).
 6. **Admin-gated model switching.** Only IDs in `pro.xpst.telegram.bot.users.admin` can use `/model`; non-admin clicks on the inline keyboard are silently dropped.
 7. **Allow-listed users and groups.** Empty list for users/groups means "everyone" (convenient for dev); set both lists in production.
+8. **Optional tool allowlist.** `CLAUDE_TOOLS` / `GEMINI_TOOLS` enable named built-in tools (e.g. `WebSearch`, `google_web_search`) — both empty by default. When non-empty, the per-CLI security file is augmented at runtime with a "Tool authorization" clause that names the allowed tools and keeps every other rule (no filesystem, no shell, refuse jailbreak, language match) in force. The committed security files stay strict; only the runtime-augmented copy is sent to the CLI. **Permission-mode change for Claude:** when `CLAUDE_TOOLS` is non-empty, Claude's `--permission-mode plan` is dropped and the argv switches to `--tools <list> --allowed-tools <list>` — `plan` mode otherwise refuses external-network tools like `WebSearch` even when listed. The `--tools <list>` allowlist becomes the safety floor (anything outside the list is rejected at the CLI layer). Gemini keeps `--approval-mode plan` either way; its plan mode does not block read-only built-ins like `google_web_search`. Trade-offs to weigh before enabling:
+   - **Prompt injection from search results.** A malicious page in the result set can try to subvert the model. The override clause keeps the rest of the rules in force, but doesn't fully neutralize this.
+   - **Search-query disclosure.** User text becomes a search query, so anything sensitive in messages reaches the search provider.
+   - **`WebFetch` / `web_fetch` is riskier than search.** It lets the model fetch arbitrary URLs — potential SSRF if the host has reachable internal services. Recommend off unless explicitly needed.
 
 ## Not included
 

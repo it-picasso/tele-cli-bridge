@@ -31,6 +31,8 @@ public class AiServiceFactory {
     private final String claudeWorkdir;
     private final String geminiWorkdir;
     private final String claudeEffort;
+    private final String claudeTools;
+    private final String geminiTools;
     private final ApplicationContext applicationContext;
 
     private final Map<Long, AiService> serviceMap = new HashMap<>();
@@ -48,6 +50,8 @@ public class AiServiceFactory {
             @Value("${pro.xpst.cli.claude.workdir:./claude-cli}") String claudeWorkdir,
             @Value("${pro.xpst.cli.gemini.workdir:./gemini-cli}") String geminiWorkdir,
             @Value("${pro.xpst.cli.claude.effort:}") String claudeEffort,
+            @Value("${pro.xpst.cli.claude.tools:}") String claudeTools,
+            @Value("${pro.xpst.cli.gemini.tools:}") String geminiTools,
             ApplicationContext applicationContext) {
         this.claudeModels = claudeModels;
         this.geminiModels = geminiModels;
@@ -61,6 +65,8 @@ public class AiServiceFactory {
         this.claudeWorkdir = claudeWorkdir;
         this.geminiWorkdir = geminiWorkdir;
         this.claudeEffort = claudeEffort;
+        this.claudeTools = claudeTools;
+        this.geminiTools = geminiTools;
         this.applicationContext = applicationContext;
     }
 
@@ -108,7 +114,8 @@ public class AiServiceFactory {
                 this.defaultClaudeModel,
                 this.expirationMinutes,
                 this.cliTimeoutSeconds,
-                this.claudeEffort);
+                this.claudeEffort,
+                this.claudeTools);
     }
 
     private AiService createGemini() {
@@ -118,6 +125,7 @@ public class AiServiceFactory {
                 this.geminiWorkdir,
                 this.defaultGeminiModel,
                 this.expirationMinutes,
-                this.cliTimeoutSeconds);
+                this.cliTimeoutSeconds,
+                this.geminiTools);
     }
 }

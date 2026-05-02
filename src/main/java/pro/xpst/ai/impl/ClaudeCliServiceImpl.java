@@ -15,6 +15,7 @@ import java.util.List;
 public class ClaudeCliServiceImpl extends AbstractCliService {
 
     private final String effort;
+    private final String tools;
     private final String securitySystemPrompt;
 
     public ClaudeCliServiceImpl(String binary,
@@ -22,15 +23,18 @@ public class ClaudeCliServiceImpl extends AbstractCliService {
                                 String defaultModel,
                                 int expirationMinutes,
                                 long timeoutSeconds,
-                                String effort) {
+                                String effort,
+                                String tools) {
         super(binary, workdirPath, defaultModel, expirationMinutes, timeoutSeconds);
         this.effort = effort;
+        this.tools = tools;
         Path securityFile = this.workdir.toPath().resolve("CLAUDE.md");
         if (!Files.isRegularFile(securityFile)) {
             throw new IllegalStateException("Required security file missing: " + securityFile);
         }
         try {
-            this.securitySystemPrompt = Files.readString(securityFile, StandardCharsets.UTF_8);
+            String base = Files.readString(securityFile, StandardCharsets.UTF_8);
+            this.securitySystemPrompt = applyToolPolicy(base, tools);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to read " + securityFile, e);
         }
@@ -49,10 +53,19 @@ public class ClaudeCliServiceImpl extends AbstractCliService {
         argv.add(this.currentModel);
         argv.add("--output-format");
         argv.add("text");
-        argv.add("--permission-mode");
-        argv.add("plan");
-        argv.add("--tools");
-        argv.add("");
+        boolean toolsEnabled = this.tools != null && !this.tools.isBlank();
+        if (toolsEnabled) {
+            String trimmed = this.tools.trim();
+            argv.add("--tools");
+            argv.add(trimmed);
+            argv.add("--allowed-tools");
+            argv.add(trimmed);
+        } else {
+            argv.add("--permission-mode");
+            argv.add("plan");
+            argv.add("--tools");
+            argv.add("");
+        }
         argv.add("--system-prompt");
         argv.add(this.securitySystemPrompt);
         if (this.effort != null && !this.effort.isBlank()) {

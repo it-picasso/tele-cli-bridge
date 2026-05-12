@@ -33,6 +33,7 @@ public class GroupAccessGuard {
 
     private List<String> triggers;
     private String botMention;
+    private String botUsernamePlain;
 
     @PostConstruct
     void init() {
@@ -51,6 +52,7 @@ public class GroupAccessGuard {
         if (name.startsWith("@")) {
             name = name.substring(1);
         }
+        this.botUsernamePlain = name;
         this.botMention = "@" + name;
         LOGGER.debug("GroupAccessGuard initialized: allowedUsers={}, allowedGroups={}, triggers={}, botMention={}",
                 allowedUsers, allowedGroups, triggers, botMention);
@@ -87,6 +89,15 @@ public class GroupAccessGuard {
         }
 
         if (chat.isGroupChat() || chat.isSuperGroupChat()) {
+            Message replyTo = aMessage.getReplyToMessage();
+            if (replyTo != null && replyTo.getFrom() != null) {
+                String authorUsername = replyTo.getFrom().getUserName();
+                if (authorUsername != null
+                        && !this.botUsernamePlain.isEmpty()
+                        && authorUsername.equalsIgnoreCase(this.botUsernamePlain)) {
+                    return Optional.of(text);
+                }
+            }
             String lower = text.toLowerCase();
             String mentionLower = this.botMention.toLowerCase();
             int mentionIdx = lower.indexOf(mentionLower);

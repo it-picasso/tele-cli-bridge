@@ -7,7 +7,7 @@ The CLIs handle their own authentication outside the JVM, so this app holds no A
 ## Highlights
 
 - **Two providers, one bot.** Per-chat conversation is routed to either `claude` or `gemini`. The active model is selectable via the admin-only `/model` inline keyboard.
-- **Group + DM aware.** Works in private chats and Telegram groups. In groups the bot only responds to `@<bot-username>` mentions or configured trigger phrases.
+- **Group + DM aware.** Works in private chats and Telegram groups. In groups the bot only responds to `@<bot-username>` mentions, configured trigger phrases, or Telegram replies to its own messages.
 - **Sandboxed subprocesses.** Every CLI invocation runs in an isolated tmp directory whose only project memory is the security-instructions file (`CLAUDE.md` / `GEMINI.md`). User input is passed via `ProcessBuilder` argv (no shell). Read-only modes are forced (`--permission-mode plan` for Claude, `--approval-mode plan` for Gemini), built-in tools are disabled (`--tools ""` for Claude), and the per-CLI persona is instructed to inline any requested file content in chat rather than writing to the host filesystem.
 - **Replies in the user's language.** Both CLI security profiles instruct the model to reply in whatever language the user wrote in (English fallback if undetectable).
 
@@ -85,11 +85,12 @@ Every value in `src/main/resources/application.properties` is wrapped as `${ENV_
 
 In **private** chats, every message from an `users.allowed` user is sent to the CLI.
 
-In **groups** the bot is silent unless **either**:
-- the message contains `@<bot-username>`, **or**
-- the message contains a phrase listed in `pro.xpst.telegram.bot.trigger.phrases` (case-insensitive).
+In **groups** the bot is silent unless **one** of the following is true:
+- the message contains `@<bot-username>`,
+- the message contains a phrase listed in `pro.xpst.telegram.bot.trigger.phrases` (case-insensitive), **or**
+- the message is a Telegram reply to one of the bot's own messages.
 
-The matched mention or trigger is stripped (along with adjacent punctuation) before the prompt is forwarded to the CLI. The slash command `/model@<bot-username>` works in groups normally; only admins (per `users.admin`) can issue it.
+The matched mention or trigger is stripped (along with adjacent punctuation) before the prompt is forwarded to the CLI. Reply-to-bot messages are passed through unstripped — the full reply text becomes the prompt. The slash command `/model@<bot-username>` works in groups normally; only admins (per `users.admin`) can issue it.
 
 ## Security model
 

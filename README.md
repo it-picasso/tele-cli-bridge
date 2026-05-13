@@ -1,6 +1,6 @@
 # tele-cli-bridge
 
-A Spring Boot 3.5 / Java 22 Telegram long-polling bot that fronts the locally installed **`claude`** and **`gemini`** CLIs. Each user message is shelled out to one of the two CLIs as a subprocess; stdout is sent back to the chat.
+A Spring Boot 4.0 / Java 25 Telegram long-polling bot that fronts the locally installed **`claude`** and **`gemini`** CLIs. Each user message is shelled out to one of the two CLIs as a subprocess; stdout is sent back to the chat.
 
 The CLIs handle their own authentication outside the JVM, so this app holds no API keys.
 
@@ -13,7 +13,7 @@ The CLIs handle their own authentication outside the JVM, so this app holds no A
 
 ## Prerequisites
 
-- **JDK 22**. If your default `java` isn't 22, set `JAVA_HOME` either in your shell or in `.env` (the bundled `run.sh` reads it from `.env` and prefixes `$JAVA_HOME/bin` to `PATH` for both the Maven build and the JVM launch).
+- **JDK 25**. If your default `java` isn't 25, set `JAVA_HOME` either in your shell or in `.env` (the bundled `run.sh` reads it from `.env` and prefixes `$JAVA_HOME/bin` to `PATH` for both the Maven build and the JVM launch).
 - **`claude` CLI** on `PATH`, authenticated. Verify: `claude --version` then `claude -p "ping"`.
 - **`gemini` CLI** on `PATH`, authenticated. Verify: `gemini --version` then `gemini -p "ping" -o text`.
 - A Telegram bot registered with [@BotFather](https://t.me/BotFather), giving you `BOT_NAME` (the @username; `@` prefix optional) and `BOT_TOKEN`.
@@ -29,7 +29,7 @@ The CLIs handle their own authentication outside the JVM, so this app holds no A
    ```bash
    ./run.sh
    ```
-   Equivalent manual steps if you'd rather run them yourself (export `JAVA_HOME` first if your default `java` isn't 22):
+   Equivalent manual steps if you'd rather run them yourself (export `JAVA_HOME` first if your default `java` isn't 25):
    ```bash
    mvn -s ./maven-settings.xml clean package
    set -a; . ./.env; set +a; LANG=C.UTF-8 LC_ALL=C.UTF-8 \

@@ -54,6 +54,8 @@ Every value in `src/main/resources/application.properties` is wrapped as `${ENV_
 | `BOT_USERS_ADMIN` | `pro.xpst.telegram.bot.users.admin` | empty (= no one) | Comma-separated Telegram user IDs that may use `/model`. Empty = `/model` is locked. |
 | `BOT_GROUPS_ALLOWED` | `pro.xpst.telegram.bot.groups.allowed` | empty (= all) | Comma-separated group/supergroup chat IDs (negative numbers). **Anyone in an allowed group** can talk to the bot — the group itself is the trust boundary. |
 | `BOT_TRIGGER_PHRASES` | `pro.xpst.telegram.bot.trigger.phrases` | empty | Comma-separated, case-insensitive phrases that activate the bot **in groups only**. Empty = require `@mention`. |
+| `BOT_SKIP_STALE_ON_STARTUP` | `pro.xpst.telegram.bot.skip-stale-on-startup` | `true` | When `true`, messages and `/model` callbacks queued by Telegram while the bot was offline are dropped silently on restart. Set to `false` to process the backlog (e.g. for debugging). |
+| `BOT_STARTUP_GRACE_SECONDS` | `pro.xpst.telegram.bot.startup-grace-seconds` | `0` | Seconds of leniency before startup that still count as "fresh". Raise if you expect clock skew between Telegram's servers and the host. |
 
 ### Models
 
@@ -91,6 +93,10 @@ In **groups** the bot is silent unless **one** of the following is true:
 - the message is a Telegram reply to one of the bot's own messages.
 
 The matched mention or trigger is stripped (along with adjacent punctuation) before the prompt is forwarded to the CLI. Reply-to-bot messages are passed through unstripped — the full reply text becomes the prompt. The slash command `/model@<bot-username>` works in groups normally; only admins (per `users.admin`) can issue it.
+
+## Restart behavior
+
+Telegram queues updates server-side while a long-polling bot is offline. On restart, by default the bot drops every queued message and `/model` callback whose `Message.date` predates the JVM's startup — answering hours-old questions is rarely what the user wants. The skipped updates are logged at `DEBUG` (`Skipping stale message …` / `Skipping stale callback query …`). Disable via `BOT_SKIP_STALE_ON_STARTUP=false`, or widen the freshness window with `BOT_STARTUP_GRACE_SECONDS=<n>`.
 
 ## Security model
 

@@ -39,17 +39,20 @@ public class BotTelegram extends CommandLongPollingTelegramBot implements Serial
     private final String botToken;
     private final AiServiceFactory aiServiceFactory;
     private final GroupAccessGuard groupAccessGuard;
+    private final MessageFreshnessGuard messageFreshnessGuard;
     private final ModelCommand modelCommand;
 
     public BotTelegram(@Value("${pro.xpst.telegram.bot.token}") String aBotToken,
                        @Value("${pro.xpst.telegram.bot.username}") String aBotName,
                        @Value("${pro.xpst.telegram.bot.users.admin:}") Set<Long> adminUsers,
                        AiServiceFactory aiServiceFactory,
-                       GroupAccessGuard groupAccessGuard) {
+                       GroupAccessGuard groupAccessGuard,
+                       MessageFreshnessGuard messageFreshnessGuard) {
         super(new OkHttpTelegramClient(aBotToken), true, () -> normalizeUsername(aBotName));
         this.botToken = aBotToken;
         this.aiServiceFactory = aiServiceFactory;
         this.groupAccessGuard = groupAccessGuard;
+        this.messageFreshnessGuard = messageFreshnessGuard;
 
         this.modelCommand = new ModelCommand(this, adminUsers);
         this.register(this.modelCommand);
@@ -79,11 +82,32 @@ public class BotTelegram extends CommandLongPollingTelegramBot implements Serial
         }
 
         if (anUpdate.hasCallbackQuery() && ModelCommand.isModelCallbackQuery(anUpdate.getCallbackQuery())) {
-            modelCommand.processCallbackQuery(anUpdate);
+            // CallbackQuery.getMessage() returns MaybeInaccessibleMessage. An InaccessibleMessage
+            // (older than 48h or deleted) is unambiguously stale; otherwise compare Message.date.
+            Message keyboardMsg = anUpdate.getCallbackQuery().getMessage() instanceof Message m ? m : null;
+            if (anUpdate.getCallbackQuery().getMessage() != null && keyboardMsg == null) {
+                LOGGER.debug("Skipping inaccessible callback query: callbackId={}",
+                        anUpdate.getCallbackQuery().getId());
+            } else if (!messageFreshnessGuard.isFresh(keyboardMsg)) {
+                LOGGER.debug("Skipping stale callback query: callbackId={}, keyboardDate={}, cutoff={}",
+                        anUpdate.getCallbackQuery().getId(),
+                        keyboardMsg == null ? null : keyboardMsg.getDate(),
+                        messageFreshnessGuard.getCutoffEpochSeconds());
+            } else {
+                modelCommand.processCallbackQuery(anUpdate);
+            }
         }
 
         if (anUpdate.hasMessage()) {
-            processMessage(anUpdate);
+            if (!messageFreshnessGuard.isFresh(anUpdate.getMessage())) {
+                LOGGER.debug("Skipping stale message: chatId={}, messageId={}, date={}, cutoff={}",
+                        anUpdate.getMessage().getChatId(),
+                        anUpdate.getMessage().getMessageId(),
+                        anUpdate.getMessage().getDate(),
+                        messageFreshnessGuard.getCutoffEpochSeconds());
+            } else {
+                processMessage(anUpdate);
+            }
         }
     }
 
